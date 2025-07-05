@@ -12,9 +12,12 @@ const MENSAJE =
 const TEXTO_NO_TURNOS =
   "En este momento la parroquia no cuenta con cupos para embarazadas";
 
-// Función principal de scraping
 async function hayTurnosDisponibles() {
-  const browser = await puppeteer.launch({ headless: "new" });
+  const browser = await puppeteer.launch({
+    headless: "new",
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+
   const page = await browser.newPage();
 
   try {
