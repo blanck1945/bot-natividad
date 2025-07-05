@@ -5,13 +5,14 @@ const axios = require("axios");
 
 // CONFIGURACIÓN
 const URL = "https://www.natividad.org.ar/turnos_embarazadas.php";
-const PHONE = process.env.PHONE;
-const API_KEY = process.env.API_KEY;
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const CHAT_ID = process.env.CHAT_ID;
 const MENSAJE =
   "🟢 ¡Hay turnos disponibles para embarazadas en la parroquia Natividad del Señor!";
 const TEXTO_NO_TURNOS =
   "En este momento la parroquia no cuenta con cupos para embarazadas";
 
+// SCRAPING
 async function hayTurnosDisponibles() {
   const browser = await puppeteer.launch({
     headless: "new",
@@ -32,16 +33,20 @@ async function hayTurnosDisponibles() {
   }
 }
 
-// Envío de WhatsApp usando CallMeBot
-async function enviarWhatsapp(mensaje) {
-  const url = `https://api.callmebot.com/whatsapp.php?phone=${PHONE}&text=${encodeURIComponent(
-    mensaje
-  )}&apikey=${API_KEY}`;
+// ENVÍO TELEGRAM
+async function enviarTelegram(mensaje) {
+  const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
   try {
-    await axios.get(url);
-    console.log(`[✔] WhatsApp enviado: ${mensaje}`);
+    await axios.post(url, {
+      chat_id: CHAT_ID,
+      text: mensaje,
+      parse_mode: "HTML",
+    });
+    console.log(`[✔] Telegram enviado: ${mensaje}`);
+    return true;
   } catch (error) {
-    console.error("[✖] Error al enviar WhatsApp:", error.message);
+    console.error("[✖] Error al enviar Telegram:", error.message);
+    return false;
   }
 }
 
@@ -49,7 +54,6 @@ async function enviarWhatsapp(mensaje) {
 const cronExpresion = "*/4 * * * *";
 console.log(`[🛠️] Cron programado: cada 4 minutos (${cronExpresion})`);
 
-// Próxima ejecución inicial
 const ahora = new Date();
 const proxima = new Date(
   Math.ceil(ahora.getTime() / (4 * 60 * 1000)) * (4 * 60 * 1000)
@@ -62,33 +66,32 @@ cron.schedule(cronExpresion, async () => {
 
   const hayTurnos = await hayTurnosDisponibles();
   if (hayTurnos) {
-    await enviarWhatsapp(MENSAJE);
+    await enviarTelegram(MENSAJE);
   } else {
     console.log("[ℹ️] No hay turnos disponibles.");
   }
 
-  // ✅ Calcular exactamente 4 minutos después del cron
   const proxima = new Date(ahora.getTime() + 4 * 60 * 1000);
   console.log(`[🕒] Próxima ejecución estimada: ${proxima.toLocaleString()}`);
   console.log("/* --------------------------------------------- */\n");
 });
 
-// ✅ Verificación real 1 minuto después del arranque
+// MENSAJE DE ACTIVACIÓN (1 minuto post-arranque)
 setTimeout(async () => {
   console.log("[⏳] Ejecutando verificación inicial (post-arranque)");
 
   try {
     const test = await hayTurnosDisponibles();
-
+    console.log(test);
     const mensajeInicio = test
-      ? "✅ El bot fue activado correctamente y la verificación inicial se realizó con éxito (hay turnos disponibles)."
-      : "✅ El bot fue activado correctamente y la verificación inicial se realizó con éxito (no hay turnos disponibles).";
+      ? "✅ Bot activo. Verificación inicial exitosa"
+      : "❌ Bot inactivo. Verificación inicial fallida";
 
-    await enviarWhatsapp(mensajeInicio);
+    await enviarTelegram(mensajeInicio);
   } catch (err) {
     const mensajeError =
-      "❌ El bot fue activado pero ocurrió un error en la verificación inicial. Revisá los logs.";
-    await enviarWhatsapp(mensajeError);
+      "❌ Bot activo, pero ocurrió un error en la verificación inicial. Revisá los logs.";
+    await enviarTelegram(mensajeError);
     console.error("[✖] Error durante verificación inicial:", err.message);
   }
 }, 60_000);

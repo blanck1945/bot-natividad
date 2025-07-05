@@ -1,25 +1,33 @@
 require("dotenv").config();
 const axios = require("axios");
 
-const PHONE = process.env.PHONE;
-const API_KEY = process.env.API_KEY;
-const MENSAJE =
-  "✅ Prueba exitosa: CallMeBot está enviando mensajes correctamente.";
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const CHAT_ID = process.env.CHAT_ID;
+const MENSAJE = "✅ Prueba exitosa desde test-telegram.js";
 
-async function enviarWhatsapp(mensaje) {
-  const url = `https://api.callmebot.com/whatsapp.php?phone=${PHONE}&text=${encodeURIComponent(
-    mensaje
-  )}&apikey=${API_KEY}`;
+async function enviarTelegram() {
+  const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+
   try {
-    const res = await axios.get(url);
-    if (res.data.toLowerCase().includes("message sent")) {
-      console.log("[✔] WhatsApp enviado correctamente");
+    const res = await axios.post(url, {
+      chat_id: CHAT_ID,
+      text: MENSAJE,
+    });
+
+    if (res.data.ok) {
+      console.log("[✔] Mensaje enviado correctamente a Telegram.");
     } else {
-      console.log("[❓] Respuesta inesperada:", res.data);
+      console.error(
+        "[✖] Error inesperado en la respuesta de Telegram:",
+        res.data
+      );
     }
   } catch (error) {
-    console.error("[✖] Error al enviar WhatsApp:", error.message);
+    console.error(
+      "[✖] Error al enviar Telegram:",
+      error.response?.data || error.message
+    );
   }
 }
 
-enviarWhatsapp(MENSAJE);
+enviarTelegram();
