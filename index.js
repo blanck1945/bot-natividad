@@ -82,10 +82,7 @@ setTimeout(async () => {
 
   try {
     const test = await hayTurnosDisponibles();
-    console.log(test);
-    const mensajeInicio = test
-      ? "✅ Bot activo. Verificación inicial exitosa"
-      : "❌ Bot inactivo. Verificación inicial fallida";
+    const mensajeInicio = "✅ Bot activo. Verificación inicial exitosa";
 
     await enviarTelegram(mensajeInicio);
   } catch (err) {
